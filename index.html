@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demurrage · CCTI</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --linea:#30363d; --txt:#e6edf3; --dim:#8b949e;
+    --rojo:#f85149; --naranja:#f0883e; --amarillo:#d29922; --verde:#3fb950; --azul:#58a6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px}
+  header{padding:18px 24px;border-bottom:1px solid var(--linea);
+         display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;background:var(--panel)}
+  h1{margin:0;font-size:19px;font-weight:650}
+  .stamp{color:var(--dim);font-size:12px}
+  .kpis{display:flex;gap:10px;padding:16px 24px;flex-wrap:wrap}
+  .kpi{background:var(--panel);border:1px solid var(--linea);border-radius:8px;
+       padding:12px 16px;min-width:104px}
+  .kpi .n{font-size:26px;font-weight:700;line-height:1.1}
+  .kpi .l{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+  .kpi.rojo .n{color:var(--rojo)} .kpi.naranja .n{color:var(--naranja)}
+  .kpi.amarillo .n{color:var(--amarillo)} .kpi.verde .n{color:var(--verde)}
+  .kpi.azul .n{color:var(--azul)}
+  .kpi.gris .n{color:var(--dim)}
+  .barra{padding:0 24px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input,select{background:var(--panel);color:var(--txt);border:1px solid var(--linea);
+        border-radius:6px;padding:7px 11px;font-size:13px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--azul)}
+  input{min-width:220px}
+  table{width:100%;border-collapse:collapse}
+  th{position:sticky;top:0;background:var(--panel);text-align:left;padding:10px 12px;
+     font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);
+     border-bottom:1px solid var(--linea);white-space:nowrap;cursor:pointer;user-select:none}
+  th:hover{color:var(--txt)}
+  td{padding:9px 12px;border-bottom:1px solid #21262d;vertical-align:middle}
+  tr:hover td{background:#1c2128}
+  .pill{display:inline-block;padding:2px 9px;border-radius:11px;font-size:11px;
+        font-weight:650;white-space:nowrap}
+  .p-VENCIDO{background:rgba(248,81,73,.18);color:var(--rojo)}
+  .p-ESTIMADOVENCIDO{background:rgba(248,81,73,.10);color:#ff9d97;border:1px dashed rgba(248,81,73,.45)}
+  .p-VENCEHOY{background:rgba(240,136,62,.18);color:var(--naranja)}
+  .p-CRITICO{background:rgba(210,153,34,.18);color:var(--amarillo)}
+  .p-ATENCION{background:rgba(88,166,255,.15);color:var(--azul)}
+  .p-OK{background:rgba(63,185,80,.15);color:var(--verde)}
+  .p-SINDATO{background:rgba(139,148,158,.15);color:var(--dim)}
+  .p-DEVUELTO{background:rgba(63,185,80,.10);color:#2ea043}
+  .p-CERRADO{background:rgba(139,148,158,.08);color:#6e7681}
+  .cont{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;font-size:13px}
+  .dim{color:var(--dim)}
+  .src{font-size:11px;padding:1px 7px;border-radius:4px;background:#21262d;color:var(--dim)}
+  .src.correo{background:rgba(88,166,255,.13);color:var(--azul)}
+  .src.kargotools{background:rgba(63,185,80,.13);color:var(--verde)}
+  .src.eta{background:rgba(210,153,34,.13);color:var(--amarillo)}
+  .dias{font-weight:700;font-family:ui-monospace,monospace}
+  .neg{color:var(--rojo)}
+  .wrap{padding:0 24px 40px}
+  .vacio{padding:60px;text-align:center;color:var(--dim)}
+  @media(max-width:820px){
+    .oculto-mov{display:none}
+    header,.kpis,.barra,.wrap{padding-left:12px;padding-right:12px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚠️ Alerta de demurrage</h1>
+  <span class="stamp" id="stamp"></span>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="barra">
+  <input id="q" placeholder="Buscar contenedor, nave o booking…">
+  <select id="fcli"><option value="">Todos los clientes</option></select>
+  <select id="fest">
+    <option value="">Todos los estados</option>
+    <option value="VENCIDO">Vencidos</option>
+    <option value="ESTIMADO VENCIDO">Estimado vencido (ETA+40d)</option>
+    <option value="VENCE HOY">Vence hoy</option>
+    <option value="CRITICO">Crítico (≤3d)</option>
+    <option value="ATENCION">Atención (≤7d)</option>
+    <option value="OK">OK</option>
+    <option value="SIN DATO">Sin dato</option>
+    <option value="DEVUELTO">Devueltos</option>
+    <option value="CERRADO">Cerrados (etapa Terminado)</option>
+  </select>
+  <label class="dim" style="font-size:12px;display:flex;gap:6px;align-items:center">
+    <input type="checkbox" id="ochk" style="min-width:auto" checked> ocultar cerrados/devueltos
+  </label>
+</div>
+
+<div class="wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-k="estado">Estado</th>
+        <th data-k="contenedor">Contenedor</th>
+        <th data-k="cliente">Cliente</th>
+        <th data-k="demurrage">Demurrage</th>
+        <th data-k="dias_restantes">Días</th>
+        <th data-k="origen">Fuente</th>
+        <th class="oculto-mov" data-k="nave">Nave / ETA</th>
+        <th class="oculto-mov" data-k="deposito">Depósito / ubicación</th>
+        <th class="oculto-mov" data-k="etapa">Etapa</th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+  <div class="vacio" id="vacio" style="display:none">Sin resultados con esos filtros.</div>
+</div>
+
+<script>
+let FILAS=[], ORD={k:null,asc:true};
+const SEV={'VENCIDO':0,'VENCE HOY':1,'CRITICO':2,'ESTIMADO VENCIDO':3,'ATENCION':4,'OK':5,'SIN DATO':6,'DEVUELTO':7,'CERRADO':8};
+const fmtDias = d => {
+  if(d===null||d===undefined) return '<span class="dim">—</span>';
+  if(d<0) return `<span class="dias neg">${d}</span>`;
+  if(d===0) return '<span class="dias" style="color:#f0883e">hoy</span>';
+  return `<span class="dias">${d}</span>`;
+};
+const pill = e => `<span class="pill p-${e.replace(/ /g,'')}">${e}</span>`;
+const srcTag = o => {
+  if(!o) return '<span class="dim">—</span>';
+  const cls = o==='eta+40d'?'eta':(o==='kargotools'?'kargotools':(o==='correo'?'correo':''));
+  const txt = o==='eta+40d'?'ETA + 40d':o;
+  return `<span class="src ${cls}">${txt}</span>`;
+};
+
+function kpis(f){
+  const c=e=>f.filter(x=>x.estado===e).length;
+  return [
+    ['VENCIDO','rojo',c('VENCIDO')],
+    ['VENCE HOY','naranja',c('VENCE HOY')],
+    ['CRÍTICO','amarillo',c('CRITICO')],
+    ['ATENCIÓN','azul',c('ATENCION')],
+    ['DEVUELTO','verde',c('DEVUELTO')],
+    ['CERRADO','gris',c('CERRADO')],
+    ['TOTAL',null,f.length]
+  ].map(([l,cl,n])=>`<div class="kpi ${cl||''}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');}
+
+function render(){
+  const q=document.getElementById('q').value.toLowerCase().trim();
+  const cli=document.getElementById('fcli').value;
+  const est=document.getElementById('fest').value;
+  const oc=document.getElementById('ochk').checked;
+  let f=FILAS.filter(x=>{
+    if(oc && (x.estado==='DEVUELTO' || x.estado==='CERRADO')) return false;
+    if(cli && x.cliente!==cli) return false;
+    if(est && x.estado!==est) return false;
+    if(q){
+      const blob=[x.contenedor,x.nave,x.cliente,x.deposito,x.ubicacion].join(' ').toLowerCase();
+      if(!blob.includes(q)) return false;
+    }
+    return true;
+  });
+  const k=ORD.k;
+  if(k){
+    const asc=ORD.asc?1:-1;
+    f.sort((a,b)=>{
+      let va=a[k], vb=b[k];
+      if(k==='dias_restantes'){ va=va===null?9999:va; vb=vb===null?9999:vb; }
+      if(va===vb) return 0;
+      return (va>vb?1:-1)*asc;
+    });
+  } else {
+    // orden por defecto = gravedad (lo mas urgente primero, nunca alfabetico)
+    f.sort((a,b)=>{
+      const sa=SEV[a.estado]??9, sb=SEV[b.estado]??9;
+      if(sa!==sb) return sa-sb;
+      const da=a.dias_restantes===null?9999:a.dias_restantes;
+      const db=b.dias_restantes===null?9999:b.dias_restantes;
+      return da-db;
+    });
+  }
+  document.getElementById('tb').innerHTML = f.map(x=>`
+    <tr>
+      <td>${pill(x.estado)}</td>
+      <td class="cont">${x.contenedor}</td>
+      <td>${x.cliente||'<span class="dim">—</span>'}</td>
+      <td class="cont">${x.demurrage||'<span class="dim">—</span>'}</td>
+      <td>${fmtDias(x.dias_restantes)}</td>
+      <td>${srcTag(x.origen)}</td>
+      <td class="oculto-mov">${x.nave?x.nave+' <span class="dim">'+x.eta+'</span>':'<span class="dim">—</span>'}</td>
+      <td class="oculto-mov">${[x.deposito,x.ubicacion].filter(Boolean).join(' · ')||'<span class="dim">—</span>'}</td>
+      <td class="oculto-mov dim">${x.etapa||'—'}</td>
+    </tr>`).join('');
+  document.getElementById('vacio').style.display = f.length?'none':'block';
+}
+
+function cargar(d){
+  FILAS=d.filas||[];
+  const m=d.meta||{};
+  document.getElementById('stamp').textContent =
+    `Actualizado ${m.generado||'—'} · ${m.total_ziyu||0} en Ziyu · ` +
+    `${m.con_demurrage_correo||0} con demurrage de correo · ` +
+    `${m.con_kargotools||0} con días libres de kargotools · ` +
+    `${m.fallback_eta40||0} estimados por ETA+${m.dias_fallback||40}d` +
+    (m.fuera_de_ziyu ? ` · ⚠ ${m.fuera_de_ziyu} fuera de Ziyu` : '');
+  document.getElementById('kpis').innerHTML=kpis(FILAS);
+  const clis=[...new Set(FILAS.map(x=>x.cliente).filter(Boolean))].sort();
+  document.getElementById('fcli').innerHTML='<option value="">Todos los clientes</option>'+
+    clis.map(c=>`<option>${c}</option>`).join('');
+  render();
+}
+
+document.getElementById('q').oninput=render;
+document.getElementById('fcli').onchange=render;
+document.getElementById('fest').onchange=render;
+document.getElementById('ochk').onchange=render;
+document.querySelectorAll('th[data-k]').forEach(th=>{
+  th.onclick=()=>{ const k=th.dataset.k;
+    ORD = {k, asc: ORD.k===k ? !ORD.asc : true}; render(); };
+});
+
+// ---- Descifrado en el navegador. La clave NO está en este archivo. ----
+const $stamp = document.getElementById('stamp');
+
+async function derivar(pass, saltB64, iter){
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt: Uint8Array.from(atob(saltB64), c=>c.charCodeAt(0)),
+     iterations: iter, hash:'SHA-256'},
+    base, {name:'AES-GCM', length:256}, false, ['decrypt']);
+}
+function b64ToBuf(s){ return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
+
+async function abrir(pass){
+  const r = await fetch('./datos.enc.json', {cache:'no-store'});
+  if(!r.ok) throw new Error('no se pudo leer datos.enc.json ('+r.status+')');
+  const env = await r.json();
+  const k = await derivar(pass, env.salt, env.iter);
+  const plano = await crypto.subtle.decrypt({name:'AES-GCM', iv: b64ToBuf(env.iv)}, k, b64ToBuf(env.ct));
+  return JSON.parse(new TextDecoder().decode(plano));
+}
+
+async function intentar(pass, guardar){
+  $stamp.textContent = 'descifrando...';
+  try{
+    const d = await abrir(pass);
+    if(guardar) try{ sessionStorage.setItem('dz_pass', pass); }catch(e){}
+    cargar(d);
+    const g = document.getElementById('gate');
+    if(g) g.remove();
+  }catch(e){
+    $stamp.textContent = 'CLAVE INCORRECTA';
+    const inp = document.getElementById('pass');
+    if(inp){ inp.value=''; inp.focus(); }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+document.getElementById('btn-pass').onclick = () =>
+  intentar(document.getElementById('pass').value, true);
+document.getElementById('pass').addEventListener('keydown', e=>{
+  if(e.key==='Enter') intentar(e.target.value, true);
+});
+
+(function auto(){
+  let p=null; try{ p = sessionStorage.getItem('dz_pass'); }catch(e){}
+  if(p) intentar(p, false);
+  else $stamp.textContent = 'clave requerida';
+})();
+});
+
+</script>
+
+<div id="gate" style="position:fixed;inset:0;background:#0d1117ee;display:flex;
+     align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px)">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;
+       padding:28px 26px;max-width:380px;width:calc(100% - 40px);text-align:center">
+    <div style="font-size:15px;font-weight:650;margin-bottom:6px">Panel de demurrage CCTI</div>
+    <div style="color:#8b949e;font-size:12.5px;margin-bottom:18px">
+      Los datos viajan cifrados. Ingresa la clave para abrirlos.
+    </div>
+    <input id="pass" type="password" autocomplete="current-password" placeholder="clave"
+      style="width:100%;padding:11px 12px;border-radius:8px;border:1px solid #30363d;
+             background:#0d1117;color:#e6edf3;font-size:14px;margin-bottom:12px">
+    <button id="btn-pass"
+      style="width:100%;padding:11px 12px;border-radius:8px;border:0;background:#238636;
+             color:#fff;font-size:14px;font-weight:600;cursor:pointer">Abrir</button>
+    <div style="color:#8b949e;font-size:11px;margin-top:14px">
+      La clave se guarda solo en esta pestaña, nunca se envía a ningún servidor.
+    </div>
+  </div>
+</div>
+</body>
+</html>
