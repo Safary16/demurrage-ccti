@@ -184,7 +184,8 @@ function render(){
       <td>${fmtDias(x.dias_restantes)}</td>
       <td>${srcTag(x.origen)}</td>
       <td class="oculto-mov">${x.nave?x.nave+' <span class="dim">'+x.eta+'</span>':'<span class="dim">—</span>'}</td>
-      <td class="oculto-mov">${[x.deposito,x.ubicacion].filter(Boolean).join(' · ')||'<span class="dim">—</span>'}</td>
+      <td class="oculto-mov">${[x.deposito,x.ubicacion].filter(Boolean).join(' · ')||'<span class="dim">—</span>'}${
+        x.sti_eir && x.sti_eir.gate_in ? `<br><span class="dim">STI GATE IN ${x.sti_eir.gate_in}</span>` : ''}</td>
       <td class="oculto-mov dim">${x.etapa||'—'}</td>
     </tr>`).join('');
   document.getElementById('vacio').style.display = f.length?'none':'block';
@@ -197,6 +198,7 @@ function cargar(d){
     `Actualizado ${m.generado||'—'} · ${m.total_ziyu||0} en Ziyu · ` +
     `${m.con_demurrage_correo||0} con demurrage de correo · ` +
     `${m.con_kargotools||0} con días libres de kargotools · ` +
+    (m.con_sti_eir ? `${m.con_sti_eir} con EIR de STI · ` : '') +
     `${m.fallback_eta40||0} estimados por ETA+${m.dias_fallback||40}d` +
     (m.fuera_de_ziyu ? ` · ⚠ ${m.fuera_de_ziyu} fuera de Ziyu` : '');
   document.getElementById('kpis').innerHTML=kpis(FILAS);
